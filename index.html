@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard de Vendas — Junho 2026</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f4f3ef; color: #1a1a18; min-height: 100vh; }
+  .page { max-width: 1100px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+  header { margin-bottom: 2rem; border-bottom: 1px solid #d5d3c9; padding-bottom: 1.25rem; display: flex; align-items: flex-end; justify-content: space-between; flex-wrap: wrap; gap: .5rem; }
+  h1 { font-size: 22px; font-weight: 600; color: #0b0b0a; }
+  .subtitle { font-size: 13px; color: #73726c; margin-top: 2px; }
+  .badge-period { font-size: 12px; background: #e1e0d9; color: #5f5e5a; padding: 4px 12px; border-radius: 20px; font-weight: 500; }
+
+  .section-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .08em; color: #898781; margin: 2rem 0 .75rem; }
+
+  .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; }
+  .kpi { background: #fff; border: 0.5px solid #d5d3c9; border-radius: 10px; padding: 1rem 1.25rem; }
+  .kpi-label { font-size: 12px; color: #898781; margin-bottom: 6px; }
+  .kpi-value { font-size: 26px; font-weight: 600; color: #0b0b0a; line-height: 1; }
+  .kpi-sub { font-size: 12px; color: #b4b2a9; margin-top: 4px; }
+  .kpi.blue .kpi-value { color: #185fa5; }
+  .kpi.green .kpi-value { color: #0f6e56; }
+  .kpi.red .kpi-value { color: #993c1d; }
+  .kpi.amber .kpi-value { color: #854f0b; }
+
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  @media (max-width: 640px) { .two-col { grid-template-columns: 1fr; } }
+
+  .card { background: #fff; border: 0.5px solid #d5d3c9; border-radius: 12px; padding: 1.25rem 1.5rem; }
+  .card-title { font-size: 13px; font-weight: 600; color: #0b0b0a; margin-bottom: 1rem; }
+  .chart-wrap { position: relative; width: 100%; }
+
+  /* Rank table */
+  .rtable { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .rtable th { text-align: left; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; color: #898781; padding: 6px 10px; border-bottom: 1px solid #e1e0d9; }
+  .rtable td { padding: 10px 10px; border-bottom: 0.5px solid #eae9e4; color: #1a1a18; }
+  .rtable tr:last-child td { border-bottom: none; }
+  .rtable tr:hover td { background: #f9f8f5; }
+  .medal { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 50%; font-size: 11px; font-weight: 700; }
+  .m1 { background: #FAC775; color: #633806; }
+  .m2 { background: #D3D1C7; color: #444441; }
+  .m3 { background: #F5C4B3; color: #4A1B0C; }
+  .m-n { background: #f1efe8; color: #888780; }
+  .val-green { color: #0f6e56; font-weight: 600; }
+  .conv-chip { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
+  .chip-hi { background: #eaf3de; color: #3b6d11; }
+  .chip-md { background: #e6f1fb; color: #185fa5; }
+  .chip-lo { background: #fcebeb; color: #a32d2d; }
+
+  /* Loss bars */
+  .loss-bar { display: flex; align-items: center; gap: 8px; margin-bottom: 9px; }
+  .lb-label { width: 155px; font-size: 12px; color: #5f5e5a; flex-shrink: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .lb-track { flex: 1; background: #f1efe8; border-radius: 3px; height: 16px; }
+  .lb-fill { height: 100%; border-radius: 3px; }
+  .lb-val { font-size: 11px; color: #73726c; width: 62px; text-align: right; flex-shrink: 0; }
+
+  /* Conv bars */
+  .conv-bar { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+  .cb-name { width: 62px; font-size: 12px; color: #5f5e5a; }
+  .cb-track { flex: 1; background: #f1efe8; border-radius: 20px; height: 20px; overflow: hidden; }
+  .cb-fill { height: 100%; border-radius: 20px; display: flex; align-items: center; justify-content: flex-end; padding-right: 8px; font-size: 11px; font-weight: 600; color: #fff; }
+  .cb-pct { font-size: 12px; font-weight: 600; color: #0b0b0a; width: 42px; text-align: right; }
+
+  .legend { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 12px; font-size: 12px; color: #73726c; }
+  .leg-sq { width: 10px; height: 10px; border-radius: 2px; display: inline-block; margin-right: 5px; vertical-align: middle; }
+
+  footer { text-align: center; font-size: 11px; color: #b4b2a9; margin-top: 3rem; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <header>
+    <div>
+      <h1>Dashboard de Vendas</h1>
+      <div class="subtitle">Equipe Acelera — análise consolidada de orçamentos e fechamentos</div>
+    </div>
+    <span class="badge-period">Junho 2026</span>
+  </header>
+
+  <div class="section-label">Visão geral</div>
+  <div class="kpi-grid">
+    <div class="kpi blue">
+      <div class="kpi-label">Total orçado</div>
+      <div class="kpi-value">R$ 7,2M</div>
+      <div class="kpi-sub">332 orçamentos emitidos</div>
+    </div>
+    <div class="kpi green">
+      <div class="kpi-label">Total vendido</div>
+      <div class="kpi-value">R$ 609K</div>
+      <div class="kpi-sub">63 vendas fechadas</div>
+    </div>
+    <div class="kpi amber">
+      <div class="kpi-label">Conversão geral</div>
+      <div class="kpi-value">8,5%</div>
+      <div class="kpi-sub">do valor total orçado</div>
+    </div>
+    <div class="kpi red">
+      <div class="kpi-label">Valor perdido identificado</div>
+      <div class="kpi-value">R$ 3,3M</div>
+      <div class="kpi-sub">com motivo registrado</div>
+    </div>
+  </div>
+
+  <div class="section-label">Ranking de vendedores</div>
+  <div class="card">
+    <table class="rtable">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Vendedor</th>
+          <th>Total orçado</th>
+          <th>Vendas fechadas</th>
+          <th>Conversão</th>
+          <th>Orçamentos</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="medal m1">1</span></td>
+          <td><strong>Thiago</strong></td>
+          <td>R$ 652.000</td>
+          <td class="val-green">R$ 227.212</td>
+          <td><span class="conv-chip chip-hi">34,9%</span></td>
+          <td>14</td>
+        </tr>
+        <tr>
+          <td><span class="medal m2">2</span></td>
+          <td><strong>Yago</strong></td>
+          <td>R$ 118.663</td>
+          <td class="val-green">R$ 118.663</td>
+          <td><span class="conv-chip chip-hi">100%</span></td>
+          <td>19</td>
+        </tr>
+        <tr>
+          <td><span class="medal m3">3</span></td>
+          <td><strong>Geovana</strong></td>
+          <td>R$ 1.975.652</td>
+          <td class="val-green">R$ 144.144</td>
+          <td><span class="conv-chip chip-md">7,3%</span></td>
+          <td>31</td>
+        </tr>
+        <tr>
+          <td><span class="medal m-n">4</span></td>
+          <td><strong>Victor</strong></td>
+          <td>R$ 1.261.476</td>
+          <td class="val-green">R$ 55.382</td>
+          <td><span class="conv-chip chip-lo">4,4%</span></td>
+          <td>110</td>
+        </tr>
+        <tr>
+          <td><span class="medal m-n">5</span></td>
+          <td><strong>Lucas</strong></td>
+          <td>R$ 841.439</td>
+          <td class="val-green">R$ 50.000</td>
+          <td><span class="conv-chip chip-lo">5,9%</span></td>
+          <td>37</td>
+        </tr>
+        <tr>
+          <td><span class="medal m-n">6</span></td>
+          <td><strong>Daniel</strong></td>
+          <td>R$ 2.388.368</td>
+          <td class="val-green">R$ 13.629</td>
+          <td><span class="conv-chip chip-lo">0,6%</span></td>
+          <td>46</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="section-label">Orçamentos vs. vendas fechadas (R$)</div>
+  <div class="card">
+    <div class="chart-wrap" style="height:280px">
+      <canvas id="budgetChart" role="img" aria-label="Gráfico de barras comparando orçamentos e vendas por vendedor">Dados de orçamento e vendas por vendedor.</canvas>
+    </div>
+    <div class="legend">
+      <span><span class="leg-sq" style="background:#185fa5"></span>Total orçado</span>
+      <span><span class="leg-sq" style="background:#0f6e56"></span>Vendas fechadas</span>
+    </div>
+  </div>
+
+  <div class="two-col" style="margin-top:1rem">
+    <div>
+      <div class="section-label">Conversão por vendedor</div>
+      <div class="card">
+        <div id="convBars"></div>
+        <div class="chart-wrap" style="height:220px;margin-top:1rem">
+          <canvas id="convChart" role="img" aria-label="Gráfico de conversão percentual por vendedor">Conversão por vendedor.</canvas>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="section-label">Motivos de perda (R$ em risco)</div>
+      <div class="card">
+        <div id="lossBars"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-label">Distribuição dos motivos de perda</div>
+  <div class="card">
+    <div class="chart-wrap" style="height:300px">
+      <canvas id="lossChart" role="img" aria-label="Gráfico de rosca com motivos de perda">Motivos de perda por valor.</canvas>
+    </div>
+    <div class="legend" id="lossLegend" style="justify-content:center;margin-top:16px"></div>
+  </div>
+
+  <footer>Gerado automaticamente com base nas planilhas enviadas · Junho 2026</footer>
+</div>
+
+<script>
+const sellers = ['Thiago','Yago','Geovana','Victor','Lucas','Daniel'];
+const budgets = [651519, 118663, 1975652, 1261476, 841439, 2388368];
+const sales   = [227212, 118663, 144144,  55382,  50000,  13629];
+const convPct = sellers.map((s,i)=>budgets[i]>0?+(sales[i]/budgets[i]*100).toFixed(1):0);
+
+const lossData = [
+  {label:'Sem retorno',         val:1101178, color:'#E24B4A'},
+  {label:'Reputação da empresa',val:897036,  color:'#BA7517'},
+  {label:'Sem estoque',         val:504268,  color:'#eb6834'},
+  {label:'Preço acima do mercado',val:401085,color:'#534AB7'},
+  {label:'Cond. de pagamento',  val:278299,  color:'#185fa5'},
+  {label:'Aprova. de desconto', val:48108,   color:'#e87ba4'},
+  {label:'Prazo de entrega',    val:44699,   color:'#0f6e56'},
+  {label:'Marketplace',         val:20275,   color:'#888780'},
+];
+const maxLoss = lossData[0].val;
+const fmtR = v => v>=1000000?'R$ '+(v/1000000).toFixed(1)+'M':'R$ '+Math.round(v/1000)+'K';
+
+// Conv bars
+const convColors = ['#0f6e56','#185fa5','#BA7517','#534AB7','#eb6834','#E24B4A'];
+const convCont = document.getElementById('convBars');
+const sorted = sellers.map((s,i)=>({s,pct:convPct[i],col:convColors[i]})).sort((a,b)=>b.pct-a.pct);
+sorted.forEach(({s,pct,col})=>{
+  convCont.innerHTML+=`<div class="conv-bar">
+    <div class="cb-name">${s}</div>
+    <div class="cb-track"><div class="cb-fill" style="width:${Math.max(pct/100*100,2)}%;background:${col}">${pct>10?pct+'%':''}</div></div>
+    <div class="cb-pct">${pct}%</div>
+  </div>`;
+});
+
+// Loss bars
+const lossCont = document.getElementById('lossBars');
+lossData.forEach(d=>{
+  const pct=(d.val/maxLoss*100).toFixed(0);
+  lossCont.innerHTML+=`<div class="loss-bar">
+    <div class="lb-label">${d.label}</div>
+    <div class="lb-track"><div class="lb-fill" style="width:${pct}%;background:${d.color}"></div></div>
+    <div class="lb-val">${fmtR(d.val)}</div>
+  </div>`;
+});
+
+// Budget vs Sales chart
+new Chart(document.getElementById('budgetChart'),{
+  type:'bar',
+  data:{
+    labels:sellers,
+    datasets:[
+      {label:'Total orçado',data:budgets,backgroundColor:'#185fa5',borderRadius:4,borderSkipped:'bottom'},
+      {label:'Vendas fechadas',data:sales,backgroundColor:'#0f6e56',borderRadius:4,borderSkipped:'bottom'}
+    ]
+  },
+  options:{
+    responsive:true,maintainAspectRatio:false,
+    plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>{const v=ctx.raw;return ctx.dataset.label+': R$ '+v.toLocaleString('pt-BR')}}}},
+    scales:{
+      x:{ticks:{font:{size:12}}},
+      y:{ticks:{callback:v=>fmtR(v),font:{size:11}}}
+    }
+  }
+});
+
+// Conv chart
+new Chart(document.getElementById('convChart'),{
+  type:'bar',
+  data:{
+    labels:sellers,
+    datasets:[{label:'Conversão %',data:convPct,backgroundColor:convColors,borderRadius:4,borderSkipped:'bottom'}]
+  },
+  options:{
+    responsive:true,maintainAspectRatio:false,
+    plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>ctx.raw+'%'}}},
+    scales:{
+      x:{ticks:{font:{size:12}}},
+      y:{max:110,ticks:{callback:v=>v+'%',font:{size:11}}}
+    }
+  }
+});
+
+// Loss donut
+const lossLeg = document.getElementById('lossLegend');
+lossData.forEach(d=>{
+  lossLeg.innerHTML+=`<span><span class="leg-sq" style="background:${d.color}"></span>${d.label}</span>`;
+});
+new Chart(document.getElementById('lossChart'),{
+  type:'doughnut',
+  data:{
+    labels:lossData.map(d=>d.label),
+    datasets:[{data:lossData.map(d=>d.val),backgroundColor:lossData.map(d=>d.color),borderWidth:2,borderColor:'#fff'}]
+  },
+  options:{
+    responsive:true,maintainAspectRatio:false,
+    cutout:'60%',
+    plugins:{
+      legend:{display:false},
+      tooltip:{callbacks:{label:ctx=>{const t=lossData.map(d=>d.val).reduce((a,b)=>a+b,0);return ctx.label+': '+fmtR(ctx.raw)+' ('+( ctx.raw/t*100).toFixed(1)+'%)'}}}
+    }
+  }
+});
+</script>
+</body>
+</html>
